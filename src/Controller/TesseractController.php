@@ -8,6 +8,7 @@
 
 namespace App\Controller;
 
+use Curl\Curl;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,6 +26,7 @@ class TesseractController extends AbstractController
         {
             return new Response('falta el parametro url en la query', 400);
         }
+
         $pathStore = sys_get_temp_dir() . '/captcha123.png';
         list($image, $cookies) = $this->getImageWithCookies($url);
         file_put_contents($pathStore, $image);
@@ -60,6 +62,36 @@ HTML;
 
         return [$image, $cookies];
     }
+
+    public function consult(Request $request, Curl $curl)
+    {
+        $query = $request->query;
+        list($captcha, $cookies) = $this->getCaptchaResult('http://www.sunat.gob.pe/ol-ti-itconsvalicpe/captcha?accion=image&nmagic=0');
+
+        $params = [
+            'accion' => 'CapturaCriterioValidez',
+            'num_ruc' => $query->get('emisor'),
+            'tipocomprobante' => $query->get('tipo_doc'),
+            'cod_docide' => $query->get('tipo_client'),
+            'num_docide' => $query->get('num_client'),
+            'num_serie' => $query->get('serie'),
+            'num_comprob' => $query->get('numero'),
+            'fec_emision' => $query->get('fecha'),
+            'cantidad' => $query->get('total'),
+            'codigo' => $captcha,
+        ];
+
+        $curl->setUserAgent('');
+        $curl->setCookies($cookies);
+        $result = $curl->post('http://www.sunat.gob.pe/ol-ti-itconsvalicpe/ConsValiCpe.htm', $params);
+
+        if ($result === false) {
+            return new Response($curl->errorMessage);
+        }
+
+        return new Response($result, 200, ['Content-Type', 'text/html']);
+    }
+
     private function joinArray($items)
     {
         $result = '';
@@ -68,5 +100,20 @@ HTML;
         }
 
         return $result;
+    }
+
+    private function getCaptchaResult($url)
+    {
+        $pathStore = sys_get_temp_dir() . '/captcha123.png';
+        list($image, $cookies) = $this->getImageWithCookies($url);
+        file_put_contents($pathStore, $image);
+        $result = (new TesseractOCR($pathStore))
+            ->whitelist(range('A', 'Z'))
+            ->run();
+
+        unlink($pathStore);
+
+        $result = preg_replace("[\s+]", '', $result);
+        return [$result, $cookies];
     }
 }

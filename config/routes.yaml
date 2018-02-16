@@ -3,5 +3,9 @@ index:
     controller: App\Controller\DefaultController::index
 
 tesseract_index:
-    path: /ocr
+    path: /ocr/
     controller:  App\Controller\TesseractController::index
+
+tesseract_consult:
+    path: /ocr/consult
+    controller:  App\Controller\TesseractController::consult

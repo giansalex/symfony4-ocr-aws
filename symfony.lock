@@ -1,4 +1,7 @@
 {
+    "php-curl-class/php-curl-class": {
+        "version": "8.0.1"
+    },
     "psr/cache": {
         "version": "1.0.1"
     },
