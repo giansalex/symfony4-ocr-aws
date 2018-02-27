@@ -19,6 +19,10 @@ use thiagoalessio\TesseractOCR\TesseractOCR;
  */
 class TesseractController extends AbstractController
 {
+    const CPE_VALIDEZ_URL = 'http://www.sunat.gob.pe/ol-ti-itconsvalicpe/ConsValiCpe.htm';
+
+    const CPE_CAPTCHA_URL = 'http://www.sunat.gob.pe/ol-ti-itconsvalicpe/captcha?accion=image&nmagic=0';
+
     public function index(Request $request): Response
     {
         $url = $request->query->get('url');
@@ -66,7 +70,7 @@ HTML;
     public function consult(Request $request, Curl $curl)
     {
         $query = $request->query;
-        list($captcha, $cookies) = $this->getCaptchaResult('http://www.sunat.gob.pe/ol-ti-itconsvalicpe/captcha?accion=image&nmagic=0');
+        list($captcha, $cookies) = $this->getCaptchaResult(self::CPE_CAPTCHA_URL);
 
         $params = [
             'accion' => 'CapturaCriterioValidez',
@@ -83,7 +87,7 @@ HTML;
 
         $curl->setUserAgent('');
         $curl->setCookies($cookies);
-        $result = $curl->post('http://www.sunat.gob.pe/ol-ti-itconsvalicpe/ConsValiCpe.htm', $params);
+        $result = $curl->post(self::CPE_VALIDEZ_URL, $params);
 
         if ($result === false) {
             return new Response($curl->errorMessage);
